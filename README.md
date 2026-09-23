@@ -282,3 +282,9 @@ rest-api-mvp-arquitetura-software/
 ├── .env.example
 └── README.md
 ```
+
+## Autor
+
+- Jonathan Greco Leite [@jonathan-greco](https://www.github.com/jonathan-greco)
+
+Esse repositório faz parte do projeto MVP de Arquitetura de Software de Pós-graduação de Engenharia de Software, em 2026, da PUC-Rio.
