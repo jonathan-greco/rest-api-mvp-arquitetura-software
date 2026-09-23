@@ -1,5 +1,5 @@
 """Repositórios concretos de cada entidade."""
-from app.models import Admin, Cafe, Comentario, Usuario
+from app.models import Admin, Cafe, Comentario
 from app.repositories.sqlalchemy_repositorio import RepositorioSQLAlchemy
 
 
@@ -9,17 +9,9 @@ class CafeRepositorio(RepositorioSQLAlchemy):
     colunas_ordenaveis = frozenset({"id", "nome"})
 
 
-class UsuarioRepositorio(RepositorioSQLAlchemy):
-    modelo = Usuario
-    colunas_ordenaveis = frozenset({"id", "nome", "email", "criado_em"})
-
-    def buscar_por_email(self, email: str) -> Usuario | None:
-        return Usuario.query.filter_by(email=email).first()
-
-
 class ComentarioRepositorio(RepositorioSQLAlchemy):
     modelo = Comentario
-    filtros_igual = frozenset({"cafe_id", "usuario_id"})
+    filtros_igual = frozenset({"cafe_id", "admin_id"})
     colunas_ordenaveis = frozenset({"id", "nota", "criado_em", "cafe_id"})
 
 

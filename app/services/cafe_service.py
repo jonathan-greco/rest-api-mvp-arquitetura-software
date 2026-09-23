@@ -25,11 +25,7 @@ class CafeService:
         self._fonte_externa = fonte_externa
         self._schema = CafeSchema()
 
-    # ------------------------------------------------------------------ Admin (banco local)
-    def list_local(self, filtros, ordenar_por, direcao, pagina, por_pagina):
-        """Lista apenas cafés do nosso banco, com paginação."""
-        return self._repo.list(filtros, ordenar_por, direcao, pagina, por_pagina)
-
+    # ------------------------------------------------------------------ Escrita (exige Admin nas rotas)
     def get_local(self, id_: int) -> Cafe:
         cafe = self._repo.get(id_)
         if cafe is None:

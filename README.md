@@ -12,17 +12,18 @@ API REST em **Python + Flask** com persistência em **SQLite (SQLAlchemy)**, doc
 6. [Integração com a SampleAPIs Coffee](#6-integração-com-a-sampleapis-coffee)
 7. [Segurança](#7-segurança)
 8. [Como executar](#8-como-executar)
-9. [Estrutura de pastas](#9-estrutura-de-pastas)
+9. [Roteiro de teste manual (curl)](#9-roteiro-de-teste-manual-curl)
+10. [Estrutura de pastas](#10-estrutura-de-pastas)
+11. [Decisões de projeto e limitações](#11-decisões-de-projeto-e-limitações)
 
 ---
 
 ## 1. Visão geral
 
-A API gerencia quatro entidades: **Usuario**, **Cafe**, **Comentario** e **Admin**.
+A API gerencia três entidades: **Cafe**, **Comentario** e **Admin**.
 
-- O **público** consulta cafés (`GET`). A consulta combina o banco local (SQLite) com a SampleAPIs Coffee: os itens externos que não existem no banco local são **concatenados** ao resultado.
-- O **Admin** (autenticado por token JWT) cria, consulta, altera e remove cafés (`POST`, `GET`, `PUT`, `DELETE`).
-- **Usuários** fazem um cadastro simples (nome e e-mail) e escrevem **comentários** (com nota de 1 a 5) sobre os cafés do banco local.
+- O **público** consulta cafés (`GET`) e comentários (`GET`). A consulta de cafés combina o banco local (SQLite) com a SampleAPIs Coffee: os itens externos que não existem no banco local são **concatenados** ao resultado.
+- O **Admin** (autenticado por token JWT) cria, consulta, altera e remove cafés (`POST`, `GET`, `PUT`, `DELETE`) e escreve **comentários** (com nota de 1 a 5) sobre os cafés do banco local — o autor do comentário é sempre o Admin autenticado no token, nunca informado no corpo da requisição.
 - Os itens da SampleAPIs Coffee são **apenas exibidos** nas consultas: nunca são gravados no SQLite.
 
 ## 2. Tecnologias
@@ -69,7 +70,7 @@ Outras decisões: *application factory* (`create_app`), configuração por vari�
 
 ```mermaid
 erDiagram
-    USUARIO ||--o{ COMENTARIO : escreve
+    ADMIN ||--o{ COMENTARIO : escreve
     CAFE ||--o{ COMENTARIO : recebe
     ADMIN {
         int id PK
@@ -80,12 +81,6 @@ erDiagram
         datetime criado_em
         datetime ultimo_login
     }
-    USUARIO {
-        int id PK
-        string nome
-        string email UK
-        datetime criado_em
-    }
     CAFE {
         int id PK
         string nome
@@ -95,7 +90,7 @@ erDiagram
     }
     COMENTARIO {
         int id PK
-        int usuario_id FK
+        int admin_id FK
         int cafe_id FK
         string texto
         int nota
@@ -114,9 +109,9 @@ erDiagram
 
 > A tabela `cafe` mudou de estrutura (não tem mais `preco`, `regiao`, `peso`, `perfil_sabor`, `opcao_moagem` nem `nivel_torra`), porque a nova fonte externa não fornece esses dados. Veja a [seção 11](#11-decisões-de-projeto-e-limitações).
 
-**Usuario:** `nome` e `e-mail` (único). **Comentario:** `usuario_id`, `cafe_id` (café do banco local), `texto` (1–1000) e `nota` (1–5). **Admin:** `nome`, `email` (único), `senha_hash`, `ativo`, `criado_em`, `ultimo_login`.
+**Comentario:** `admin_id` (autor, preenchido a partir do token — nunca vem do corpo da requisição), `cafe_id` (café do banco local), `texto` (1–1000) e `nota` (1–5). **Admin:** `nome`, `email` (único), `senha_hash`, `ativo`, `criado_em`, `ultimo_login`.
 
-Ao excluir um usuário ou um café, os comentários relacionados são removidos em cascata.
+Ao excluir um admin ou um café, os comentários relacionados são removidos em cascata.
 
 ## 5. Endpoints
 
@@ -124,16 +119,16 @@ A documentação interativa fica em **`/apidocs/`** (Swagger UI). Para rotas de 
 
 | Recurso | Método e rota | Acesso | Descrição |
 | --- | --- | --- | --- |
-| Café | `GET /api/v1/cafes` | Público | Lista cafés: banco local + SampleAPIs Coffee |
-| Café | `GET /api/v1/cafes/{id}` | Público | Busca um café (local; se não achar, SampleAPIs Coffee) |
+| Café | `GET /api/v1/cafes` | Público | Lista cafés: banco local + SampleAPIs Coffee (`?incluir_externos=false` = só local) |
+| Café | `GET /api/v1/cafes/{id}` | Público | Busca um café (`?origem=auto\|local\|externa`; padrão local e, se não achar, SampleAPIs Coffee) |
 | Admin | `POST /api/v1/admin/auth/login` | Público | Login, devolve o token JWT |
 | Admin | `GET /api/v1/admin/me` | Admin | Dados do admin autenticado |
-| Café | `POST /api/v1/admin/cafes` | Admin | Cria café |
-| Café | `GET /api/v1/admin/cafes` e `/{id}` | Admin | Lista/busca cafés do banco local |
-| Café | `PUT /api/v1/admin/cafes/{id}` | Admin | Substitui os dados do café |
-| Café | `DELETE /api/v1/admin/cafes/{id}` | Admin | Remove o café (e seus comentários) |
-| Usuário | `POST/GET /api/v1/usuarios`, `GET/PUT/DELETE /api/v1/usuarios/{id}` | Público | CRUD de usuários |
-| Comentário | `POST/GET /api/v1/comentarios`, `GET/PUT/DELETE /api/v1/comentarios/{id}` | Público | CRUD de comentários (filtros `cafe_id`, `usuario_id`) |
+| Café | `POST /api/v1/cafes` | Admin | Cria café |
+| Café | `PUT /api/v1/cafes/{id}` | Admin | Substitui os dados do café |
+| Café | `DELETE /api/v1/cafes/{id}` | Admin | Remove o café (e seus comentários) |
+| Comentário | `POST /api/v1/comentarios` | Admin | Cria comentário (autor = admin do token) |
+| Comentário | `GET /api/v1/comentarios`, `GET /api/v1/comentarios/{id}` | Público | Lista/busca comentários (filtros `cafe_id`, `admin_id`) |
+| Comentário | `PUT/DELETE /api/v1/comentarios/{id}` | Público | Atualiza/remove um comentário |
 | Healthcheck | `GET /api/v1/healthcheck` | Público | Verifica API e banco |
 
 Regras gerais:
@@ -177,6 +172,8 @@ Este projeto **não diferencia** quente/gelado: toda consulta busca os dois endp
 `GET /api/v1/cafes/{id}` usa `origem=auto` por padrão: procura no banco local e, se não achar, consulta a SampleAPIs Coffee. Como os ids locais e externos são independentes, use `?origem=externa` com o `id_externo` para buscar diretamente um item da fonte, ou `?origem=local` para restringir ao banco.
 
 > **Limitação conhecida:** como a fonte não expõe um endpoint por id nem diferencia hot/iced neste projeto, o mesmo id pode existir nos dois grupos (por exemplo, `id=2` em "hot" e `id=2` em "iced" são cafés diferentes). Nesse caso, `origem=externa` devolve o **primeiro encontrado** (a lista "hot" é buscada antes da "iced").
+
+> **Qualidade dos dados da fonte externa:** a SampleAPIs Coffee já devolveu, em `/coffee/hot`, alguns itens com o campo `id` **fora do padrão** (texto em vez de número, ex.: `"number"` ou `"123456"`). O `CafeMapper` normaliza esse valor: se converter para inteiro, vira `id_externo` normalmente; caso contrário, `id_externo` fica `null` e o item é tratado como sem id (não afeta `nome`, `descricao`, `ingredientes` nem `imagem_url`, que continuam exibidos normalmente). Isso evita que um dado malformado da fonte externa quebre a ordenação ou a listagem.
 
 ### Mapper: equivalência de campos
 
@@ -225,7 +222,7 @@ Copie `.env.example` para `.env` e ajuste.
 | `RATELIMIT_DEFAULT`, `RATELIMIT_LOGIN` | Limites de requisições | `100 per minute`, `5 per minute` |
 | `CORS_ORIGINS` | Origens permitidas, separadas por vírgula | vazio (desligado) |
 
-> **Se você já tem um `instance/cafes.db` de uma versão anterior**, apague-o antes de subir a API: a tabela `cafe` mudou de colunas e o projeto não usa migrações (cria as tabelas do zero com `db.create_all()`).
+> **Se você já tem um `instance/cafes.db` de uma versão anterior**, apague-o antes de subir a API: as tabelas `cafe` e `comentario` mudaram de colunas (e a tabela `usuario` foi removida) e o projeto não usa migrações (cria as tabelas do zero com `db.create_all()`). Pare o processo da API antes de apagar o arquivo — no Windows, o SQLite fica bloqueado enquanto o processo está rodando.
 
 ### Localmente
 
@@ -245,8 +242,8 @@ A API sobe em <http://127.0.0.1:5000> e o Swagger em <http://127.0.0.1:5000/apid
 docker build -t cafe-api .
 
 docker run -d --name cafe-api -p 5000:5000 \
-  -e JWT_SECRET_KEY="trocar por uma chave secreta" \
-  -e ADMIN_EMAIL="admin@teste.com.br" \
+  -e JWT_SECRET_KEY="troque-por-um-segredo-longo" \
+  -e ADMIN_EMAIL="admin@exemplo.com" \
   -e ADMIN_SENHA="SenhaForte123" \
   -v cafe-data:/app/instance \
   cafe-api
@@ -256,7 +253,47 @@ Ou, com um arquivo `.env`: `docker run -d -p 5000:5000 --env-file .env -v cafe-d
 
 O volume `cafe-data` guarda o arquivo SQLite, então os dados sobrevivem à remoção do container. Em `APP_ENV=production` (padrão da imagem) a aplicação não inicia sem `JWT_SECRET_KEY`, `ADMIN_EMAIL` e `ADMIN_SENHA`. Logs: `docker logs cafe-api`.
 
-## 9. Estrutura de pastas
+## 9. Roteiro de teste manual (curl)
+
+Assumindo a API em `http://localhost:5000` e o admin `admin@exemplo.com` / `SenhaForte123`.
+
+```bash
+# 1) Login do admin e captura do token
+TOKEN=$(curl -s -X POST localhost:5000/api/v1/admin/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@exemplo.com","senha":"SenhaForte123"}' | python -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+
+# 2) Admin cria um café (POST na própria coleção /api/v1/cafes)
+curl -s -X POST localhost:5000/api/v1/cafes \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"nome":"Latte","descricao":"Espresso com leite vaporizado.","ingredientes":["Espresso","Leite vaporizado"],"imagem_url":"https://exemplo.com/latte.jpg"}'
+
+# 3) Admin atualiza e remove (PUT, DELETE)
+curl -s -X PUT localhost:5000/api/v1/cafes/1 -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"nome":"Latte Clássico","ingredientes":["Espresso","Leite vaporizado","Espuma de leite"]}'
+curl -s -X DELETE localhost:5000/api/v1/cafes/1 -H "Authorization: Bearer $TOKEN" -i
+
+# 4) Consulta pública: banco local + SampleAPIs Coffee
+curl -s "localhost:5000/api/v1/cafes?ordenar_por=nome&direcao=desc"
+curl -s "localhost:5000/api/v1/cafes?incluir_externos=false"      # só banco local
+curl -s "localhost:5000/api/v1/cafes/2?origem=externa"            # item de id 2 na fonte externa
+
+# 5) Comentário do Admin sobre um café (autor vem do token, não do corpo)
+curl -s -X POST localhost:5000/api/v1/comentarios -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"cafe_id":1,"texto":"Excelente aroma!","nota":5}'
+curl -s "localhost:5000/api/v1/comentarios?cafe_id=1"
+
+# 6) Verificações de segurança (todas devem ser recusadas ou tratadas como texto)
+curl -s -i -X POST localhost:5000/api/v1/cafes -H "Content-Type: application/json" \
+  -d '{"nome":"sem token"}'                                                    # 401 sem token
+curl -s -i localhost:5000/api/v1/comentarios -X POST -H "Content-Type: application/json" \
+  -d '{"cafe_id":1,"texto":"sem token","nota":3}'                              # 401 sem token
+curl -s "localhost:5000/api/v1/cafes?ordenar_por=id;DROP%20TABLE%20cafe" -H "Authorization: Bearer $TOKEN"   # 422
+curl -s -X POST localhost:5000/api/v1/cafes -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"nome":"x'); DROP TABLE cafe;--"}'                                      # gravado como texto, tabela intacta
+```
+
+## 10. Estrutura de pastas
 
 ```text
 rest-api-mvp-arquitetura-software/
@@ -266,7 +303,7 @@ rest-api-mvp-arquitetura-software/
 │   ├── container.py           # montagem das dependências (injeção)
 │   ├── extensions.py          # db, jwt, limiter, swagger
 │   ├── swagger_docs.py        # definições compartilhadas do Swagger
-│   ├── models/                # Usuario, Cafe, Comentario, Admin (SQLAlchemy)
+│   ├── models/                # Cafe, Comentario, Admin (SQLAlchemy)
 │   ├── schemas/                # validação e serialização (Marshmallow)
 │   ├── repositories/           # RepositorioBase + implementação SQLAlchemy
 │   ├── services/               # regras de negócio
@@ -283,8 +320,17 @@ rest-api-mvp-arquitetura-software/
 └── README.md
 ```
 
-## Autor
+## 11. Decisões de projeto e limitações
 
-- Jonathan Greco Leite [@jonathan-greco](https://www.github.com/jonathan-greco)
-
-Esse repositório faz parte do projeto MVP de Arquitetura de Software de Pós-graduação de Engenharia de Software, em 2026, da PUC-Rio.
+- **Modelo Cafe alinhado à SampleAPIs Coffee**: a fonte externa só fornece `title`, `description`, `ingredients` e `image`, sem preço, região, peso, moagem ou torra. Por isso o modelo Cafe (e a tabela `cafe`) foi reduzido a `nome`, `descricao`, `ingredientes` e `imagem_url` — os campos antigos (`preco`, `regiao`, `peso`, `perfil_sabor`, `opcao_moagem`, `nivel_torra`) foram removidos.
+- **Quente/gelado não é diferenciado**: a fonte expõe `/coffee/hot` e `/coffee/iced` separadamente; este projeto sempre consulta os dois e junta o resultado, sem marcar qual é qual.
+- **Sem endpoint por id na fonte externa**: `origem=externa` busca nas duas listas e pode haver colisão de id entre hot e iced (ver seção 6).
+- **Itens da SampleAPIs Coffee são só exibidos**, sem importação para o SQLite; comentários só referenciam cafés do banco local.
+- **Entidade Usuário removida**: o projeto não distingue mais usuários comuns. Os comentários passaram a ser escritos pelo próprio **Admin** — `POST /api/v1/comentarios` exige login (token JWT) e o `admin_id` do comentário vem sempre do admin autenticado, nunca do corpo da requisição.
+- **Escrita de cafés e criação de comentário são exclusivas do Admin**; leitura de comentários é pública, e `PUT`/`DELETE` de comentário permanecem abertos (o MVP não distingue "dono" do comentário além do autor original, então qualquer cliente pode atualizar ou remover um comentário existente).
+- **Um único Admin, criado por seed**; não há CRUD de admins nem recuperação de senha.
+- **CRUD de Café pertence à coleção `/api/v1/cafes`**, não à área do Admin: `POST`/`PUT`/`DELETE` exigem login, mas vivem no mesmo recurso do `GET`, que é todo público. Não existe mais uma listagem/detalhe "de gestão" separada — quem precisa só do banco local usa `GET /api/v1/cafes?incluir_externos=false` ou `GET /api/v1/cafes/{id}?origem=local`, sem exigir login.
+- **Rate limit em memória**: vale por processo. Por isso o Docker usa 1 worker Gunicorn com threads; para escalar horizontalmente, use um armazenamento compartilhado (`RATELIMIT_STORAGE_URI`, por exemplo Redis).
+- **SQLite** atende ao MVP; para mais concorrência, troque `DATABASE_URL` por outro banco (o acesso é todo via SQLAlchemy).
+- **Sem migrações** (Alembic): as tabelas são criadas com `db.create_all()`. Trocar a estrutura do Cafe (como fizemos aqui) exige apagar o banco existente.
+- **Sem testes automatizados**, conforme definido no escopo; o roteiro da seção 9 cobre a verificação manual.

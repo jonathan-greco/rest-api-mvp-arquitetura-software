@@ -12,7 +12,8 @@ class ComentarioSchema(Schema):
         unknown = RAISE
 
     id = fields.Int(dump_only=True)
-    usuario_id = fields.Int(required=True, strict=True, validate=validate.Range(min=1))
+    # admin_id não vem do corpo da requisição: é preenchido a partir do Admin autenticado (token JWT).
+    admin_id = fields.Int(dump_only=True)
     cafe_id = fields.Int(required=True, strict=True, validate=validate.Range(min=1))
     texto = TextoSeguro(required=True, validate=validate.Length(min=1, max=1000))
     nota = fields.Int(required=True, strict=True, validate=validate.Range(min=1, max=5))
@@ -33,7 +34,7 @@ class ComentarioListagemSchema(ListagemBaseSchema):
     """Filtros e ordenação da listagem de comentários."""
 
     cafe_id = fields.Int(validate=validate.Range(min=1))
-    usuario_id = fields.Int(validate=validate.Range(min=1))
+    admin_id = fields.Int(validate=validate.Range(min=1))
     ordenar_por = fields.Str(
         load_default="id", validate=validate.OneOf(["id", "nota", "criado_em", "cafe_id"])
     )

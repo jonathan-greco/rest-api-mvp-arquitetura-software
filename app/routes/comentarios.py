@@ -1,6 +1,7 @@
-"""CRUD de comentários: usuários escrevem sobre cafés do banco local."""
-from flask import Blueprint, jsonify
+"""CRUD de comentários: o Admin autenticado escreve sobre cafés do banco local."""
+from flask import Blueprint, g, jsonify
 
+from app.routes.decorators import admin_required
 from app.routes.utils import carregar_query, container, get_json, resposta_paginada
 from app.schemas.comentario_schema import (
     ComentarioAtualizacaoSchema,
@@ -16,10 +17,13 @@ _listagem_schema = ComentarioListagemSchema()
 
 
 @comentarios_bp.post("")
+@admin_required
 def criar_comentario():
-    """Cria um comentário de um usuário sobre um café do banco local.
+    """Cria um comentário do Admin autenticado sobre um café do banco local.
     ---
     tags: [Comentários]
+    security:
+      - Bearer: []
     parameters:
       - in: body
         name: body
@@ -31,23 +35,32 @@ def criar_comentario():
         description: Comentário criado
         schema:
           $ref: '#/definitions/Comentario'
+      401:
+        description: Token ausente, inválido ou expirado
+        schema:
+          $ref: '#/definitions/Erro'
+      403:
+        description: Sem permissão de admin
+        schema:
+          $ref: '#/definitions/Erro'
       422:
-        description: Dados inválidos ou usuário/café inexistente
+        description: Dados inválidos ou café inexistente
         schema:
           $ref: '#/definitions/Erro'
     """
     dados = _schema.load(get_json())
+    dados["admin_id"] = g.admin.id  # autor é sempre o admin autenticado, nunca informado pelo cliente
     return jsonify(_schema.dump(container().comentario_service.criar(dados))), 201
 
 
 @comentarios_bp.get("")
 def list_comentarios():
-    """Lista comentários, com filtros por café e por usuário.
+    """Lista comentários, com filtros por café e por admin autor.
     ---
     tags: [Comentários]
     parameters:
       - {in: query, name: cafe_id, type: integer}
-      - {in: query, name: usuario_id, type: integer}
+      - {in: query, name: admin_id, type: integer}
       - {in: query, name: ordenar_por, type: string, enum: [id, nota, criado_em, cafe_id], default: id}
       - {in: query, name: direcao, type: string, enum: [asc, desc], default: asc}
       - {in: query, name: pagina, type: integer, default: 1}

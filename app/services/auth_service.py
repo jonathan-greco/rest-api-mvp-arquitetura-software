@@ -1,4 +1,4 @@
-"""Autenticação do Admin: login, geração de token e criação do usuário admin"""
+"""Autenticação do Admin: login, geração de token JWT e criação do admin inicial (seed)."""
 import logging
 import re
 
@@ -8,7 +8,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from app.errors.exceptions import NaoAutenticadoError, ValidacaoError
 from app.models import Admin
-from app.models.usuario import agora_utc
+from app.models._util import agora_utc
 from app.repositories.repositorios import AdminRepositorio
 
 logger = logging.getLogger(__name__)
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 _HASH_FICTICIO = generate_password_hash("senha-ficticia-para-tempo-constante")
 
 
-def validar_senha(senha: str) -> None:
+def validar_senha_forte(senha: str) -> None:
     """Exige mínimo de 8 caracteres, com ao menos uma letra e um número."""
     if len(senha) < 8 or not re.search(r"[A-Za-z]", senha) or not re.search(r"\d", senha):
         raise ValidacaoError(
@@ -30,9 +30,9 @@ class AuthService:
         self._repo = admin_repositorio
 
     def autenticar(self, email: str, senha: str) -> tuple[str, Admin]:
-        """Valida as credenciais. Falhas geram sempre a mesma mensagem."""
+        """Valida as credenciais e devolve (token JWT, admin). Falhas geram sempre a mesma mensagem."""
         admin = self._repo.buscar_por_email(email)
-        # Sempre compara um hash para manter o tempo de resposta constante.
+        # Sempre compara um hash (mesmo que fictício) para manter o tempo de resposta constante.
         hash_comparado = admin.senha_hash if admin else _HASH_FICTICIO
         senha_confere = check_password_hash(hash_comparado, senha)
 
@@ -44,17 +44,20 @@ class AuthService:
         return token, admin
 
     def garantir_admin_inicial(self, nome: str, email: str | None, senha: str | None) -> None:
-        """Cria o admin inicial se ainda não existir.
+        """Cria o admin inicial (seed) se ainda não existir.
 
-        Em desenvolvimento, sem ADMIN_EMAIL/ADMIN_SENHA, nenhum admin é criado
+        Em desenvolvimento, sem ADMIN_EMAIL/ADMIN_SENHA, nenhum admin é criado (só um aviso no log).
         """
         if not email or not senha:
-            logger.warning("ADMIN_EMAIL/ADMIN_SENHA não informados: nenhum admin foi criado.")
+            logger.warning(
+                "ADMIN_EMAIL/ADMIN_SENHA não informados: nenhum admin foi criado. "
+                "As rotas /admin/cafes ficarão inacessíveis."
+            )
             return
         email = email.strip().lower()
         if self._repo.buscar_por_email(email) is not None:
             return
-        validar_senha(senha)
+        validar_senha_forte(senha)
         self._repo.criar({
             "nome": nome,
             "email": email,

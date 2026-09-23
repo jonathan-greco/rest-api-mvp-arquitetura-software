@@ -25,27 +25,24 @@ SWAGGER_TEMPLATE = {
     "swagger": "2.0",
     "info": {
         "title": "API de Cafés",
-        "top_title": 'Meu Novo Título na Aba do Navegador',
-        "author": "Jonathan Greco Leite",
         "description": (
-            "MVP de API REST (Flask + SQLAlchemy + SQLite) com CRUD de Usuário, Café, "
-            "Comentário e área Admin. O GET público de cafés combina o banco local com a API "
-            "externa SampleAPIs Coffee (https://api.sampleapis.com/coffee).\n\n"
-            "**Rotas de Admin:** faça login em `POST /api/v1/admin/auth/login`, copie o token e "
-            "clique em *Authorize* informando `Bearer <token>`."
+            "MVP de API REST (Flask + SQLAlchemy + SQLite) com CRUD de Café e Comentário, "
+            "gerenciados na própria coleção de cada um (escrita exige login de Admin). O GET "
+            "público de cafés combina o banco local com a API externa SampleAPIs Coffee "
+            "(https://api.sampleapis.com/coffee).\n\n"
+            "**Login:** faça `POST /api/v1/admin/auth/login`, copie o token e clique em "
+            "*Authorize* informando `Bearer <token>`."
         ),
         "version": "1.0.0",
-        "author": "Jonathan Greco Leite",
     },
     "basePath": "/",
     "schemes": ["http", "https"],
     "consumes": ["application/json"],
     "produces": ["application/json"],
     "tags": [
-        {"name": "Cafés", "description": "Consulta pública (banco local + SampleAPIs Coffee)"},
-        {"name": "Admin", "description": "Login e gestão de cafés (requer token)"},
-        {"name": "Usuários", "description": "Cadastro simples de usuários"},
-        {"name": "Comentários", "description": "Comentários de usuários sobre cafés"},
+        {"name": "Cafés", "description": "Consulta pública (GET); escrita (POST/PUT/DELETE) requer login de Admin"},
+        {"name": "Admin", "description": "Login e dados do Admin autenticado"},
+        {"name": "Comentários", "description": "Comentários do Admin sobre cafés (criação exige login)"},
         {"name": "Healthcheck", "description": "Verificação do serviço"},
     ],
     "securityDefinitions": {
@@ -113,37 +110,10 @@ SWAGGER_TEMPLATE = {
                 },
             },
         },
-        "UsuarioEntrada": {
-            "type": "object",
-            "required": ["nome", "email"],
-            "properties": {
-                "nome": {"type": "string", "example": "Maria Silva"},
-                "email": {"type": "string", "example": "maria@exemplo.com"},
-            },
-        },
-        "Usuario": {
-            "type": "object",
-            "properties": {
-                "id": {"type": "integer"},
-                "nome": {"type": "string"},
-                "email": {"type": "string"},
-                "criado_em": {"type": "string", "format": "date-time"},
-            },
-        },
-        "ListaUsuarios": {
-            "type": "object",
-            "properties": {
-                "itens": {"type": "array", "items": {"$ref": "#/definitions/Usuario"}},
-                "total": {"type": "integer"},
-                "pagina": {"type": "integer"},
-                "por_pagina": {"type": "integer"},
-            },
-        },
         "ComentarioEntrada": {
             "type": "object",
-            "required": ["usuario_id", "cafe_id", "texto", "nota"],
+            "required": ["cafe_id", "texto", "nota"],
             "properties": {
-                "usuario_id": {"type": "integer", "example": 1},
                 "cafe_id": {"type": "integer", "description": "Id de um café do banco local", "example": 1},
                 "texto": {"type": "string", "example": "Excelente aroma e sabor equilibrado."},
                 "nota": {"type": "integer", "minimum": 1, "maximum": 5, "example": 5},
@@ -161,7 +131,7 @@ SWAGGER_TEMPLATE = {
             "type": "object",
             "properties": {
                 "id": {"type": "integer"},
-                "usuario_id": {"type": "integer"},
+                "admin_id": {"type": "integer", "description": "Id do Admin autor (preenchido a partir do token)"},
                 "cafe_id": {"type": "integer"},
                 "texto": {"type": "string"},
                 "nota": {"type": "integer"},

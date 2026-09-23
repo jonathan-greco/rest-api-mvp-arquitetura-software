@@ -8,11 +8,11 @@ class ComentarioService:
     def __init__(
         self,
         repositorio: RepositorioBase,
-        usuario_repositorio: RepositorioBase,
+        admin_repositorio: RepositorioBase,
         cafe_repositorio: RepositorioBase,
     ):
         self._repo = repositorio
-        self._usuarios = usuario_repositorio
+        self._admins = admin_repositorio
         self._cafes = cafe_repositorio
 
     def list(self, filtros, ordenar_por, direcao, pagina, por_pagina):
@@ -25,10 +25,10 @@ class ComentarioService:
         return comentario
 
     def criar(self, dados: dict) -> Comentario:
-        # Comentário só pode apontar para usuário e café que existem no nosso banco.
+        # Comentário só pode apontar para admin e café que existem no nosso banco.
         erros = {}
-        if self._usuarios.get(dados["usuario_id"]) is None:
-            erros["usuario_id"] = ["Usuário não encontrado."]
+        if self._admins.get(dados["admin_id"]) is None:
+            erros["admin_id"] = ["Administrador não encontrado."]
         if self._cafes.get(dados["cafe_id"]) is None:
             erros["cafe_id"] = ["Café não encontrado no banco local."]
         if erros:
