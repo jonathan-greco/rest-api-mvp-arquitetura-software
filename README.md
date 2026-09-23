@@ -12,9 +12,7 @@ API REST em **Python + Flask** com persistência em **SQLite (SQLAlchemy)**, doc
 6. [Integração com a SampleAPIs Coffee](#6-integração-com-a-sampleapis-coffee)
 7. [Segurança](#7-segurança)
 8. [Como executar](#8-como-executar)
-9. [Roteiro de teste manual (curl)](#9-roteiro-de-teste-manual-curl)
-10. [Estrutura de pastas](#10-estrutura-de-pastas)
-11. [Decisões de projeto e limitações](#11-decisões-de-projeto-e-limitações)
+9. [Estrutura de pastas](#9-estrutura-de-pastas)
 
 ---
 
@@ -258,47 +256,7 @@ Ou, com um arquivo `.env`: `docker run -d -p 5000:5000 --env-file .env -v cafe-d
 
 O volume `cafe-data` guarda o arquivo SQLite, então os dados sobrevivem à remoção do container. Em `APP_ENV=production` (padrão da imagem) a aplicação não inicia sem `JWT_SECRET_KEY`, `ADMIN_EMAIL` e `ADMIN_SENHA`. Logs: `docker logs cafe-api`.
 
-## 9. Roteiro de teste manual (curl)
-
-Assumindo a API em `http://localhost:5000` e o admin `admin@exemplo.com` / `SenhaForte123`.
-
-```bash
-# 1) Login do admin e captura do token
-TOKEN=$(curl -s -X POST localhost:5000/api/v1/admin/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@exemplo.com","senha":"SenhaForte123"}' | python -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
-
-# 2) Admin cria um café (POST)
-curl -s -X POST localhost:5000/api/v1/admin/cafes \
-  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"nome":"Latte","descricao":"Espresso com leite vaporizado.","ingredientes":["Espresso","Leite vaporizado"],"imagem_url":"https://exemplo.com/latte.jpg"}'
-
-# 3) Admin lista, atualiza e remove (GET, PUT, DELETE)
-curl -s localhost:5000/api/v1/admin/cafes -H "Authorization: Bearer $TOKEN"
-curl -s -X PUT localhost:5000/api/v1/admin/cafes/1 -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"nome":"Latte Clássico","ingredientes":["Espresso","Leite vaporizado","Espuma de leite"]}'
-curl -s -X DELETE localhost:5000/api/v1/admin/cafes/1 -H "Authorization: Bearer $TOKEN" -i
-
-# 4) Consulta pública: banco local + SampleAPIs Coffee
-curl -s "localhost:5000/api/v1/cafes?ordenar_por=nome&direcao=desc"
-curl -s "localhost:5000/api/v1/cafes?incluir_externos=false"      # só banco local
-curl -s "localhost:5000/api/v1/cafes/2?origem=externa"            # item de id 2 na fonte externa
-
-# 5) Usuário e comentário
-curl -s -X POST localhost:5000/api/v1/usuarios -H "Content-Type: application/json" \
-  -d '{"nome":"Maria Silva","email":"maria@exemplo.com"}'
-curl -s -X POST localhost:5000/api/v1/comentarios -H "Content-Type: application/json" \
-  -d '{"usuario_id":1,"cafe_id":1,"texto":"Excelente aroma!","nota":5}'
-curl -s "localhost:5000/api/v1/comentarios?cafe_id=1"
-
-# 6) Verificações de segurança (todas devem ser recusadas ou tratadas como texto)
-curl -s -i localhost:5000/api/v1/admin/cafes                                   # 401 sem token
-curl -s "localhost:5000/api/v1/admin/cafes?ordenar_por=id;DROP%20TABLE%20cafe" -H "Authorization: Bearer $TOKEN"   # 422
-curl -s -X POST localhost:5000/api/v1/usuarios -H "Content-Type: application/json" \
-  -d '{"nome":"x'); DROP TABLE usuario;--","email":"a@b.com"}'            # gravado como texto, tabela intacta
-```
-
-## 10. Estrutura de pastas
+## 9. Estrutura de pastas
 
 ```text
 rest-api-mvp-arquitetura-software/
@@ -324,16 +282,3 @@ rest-api-mvp-arquitetura-software/
 ├── .env.example
 └── README.md
 ```
-
-## 11. Decisões de projeto e limitações
-
-- **Modelo Cafe alinhado à SampleAPIs Coffee**: a fonte externa só fornece `title`, `description`, `ingredients` e `image`, sem preço, região, peso, moagem ou torra. Por isso o modelo Cafe (e a tabela `cafe`) foi reduzido a `nome`, `descricao`, `ingredientes` e `imagem_url` — os campos antigos (`preco`, `regiao`, `peso`, `perfil_sabor`, `opcao_moagem`, `nivel_torra`) foram removidos.
-- **Quente/gelado não é diferenciado**: a fonte expõe `/coffee/hot` e `/coffee/iced` separadamente; este projeto sempre consulta os dois e junta o resultado, sem marcar qual é qual.
-- **Sem endpoint por id na fonte externa**: `origem=externa` busca nas duas listas e pode haver colisão de id entre hot e iced (ver seção 6).
-- **Itens da SampleAPIs Coffee são só exibidos**, sem importação para o SQLite; comentários só referenciam cafés do banco local.
-- **Escrita de cafés é exclusiva do Admin**; usuários e comentários são abertos (o MVP não autentica usuários comuns, então qualquer cliente pode editar comentários de outro).
-- **Um único Admin, criado por seed**; não há CRUD de admins nem recuperação de senha.
-- **Rate limit em memória**: vale por processo. Por isso o Docker usa 1 worker Gunicorn com threads; para escalar horizontalmente, use um armazenamento compartilhado (`RATELIMIT_STORAGE_URI`, por exemplo Redis).
-- **SQLite** atende ao MVP; para mais concorrência, troque `DATABASE_URL` por outro banco (o acesso é todo via SQLAlchemy).
-- **Sem migrações** (Alembic): as tabelas são criadas com `db.create_all()`. Trocar a estrutura do Cafe (como fizemos aqui) exige apagar o banco existente.
-- **Sem testes automatizados**, conforme definido no escopo; o roteiro da seção 9 cobre a verificação manual.
