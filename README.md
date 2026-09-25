@@ -61,8 +61,6 @@ Cada camada só conhece a de baixo, por meio de abstrações:
 | **I** — Segregação de interfaces | Interfaces pequenas: `RepositorioBase` (CRUD) e `FonteCafeExterna` (apenas leitura: `list` e `get`). |
 | **D** — Inversão de dependência | Os services recebem repositórios e fonte externa no construtor. A montagem acontece em um único lugar, `app/container.py`. |
 
-Outras decisões: *application factory* (`create_app`), configuração por variáveis de ambiente, exceções de domínio (`NaoEncontradoError`, `ConflitoError`, ...) convertidas em JSON padronizado por um handler global.
-
 ## 4. Modelo de dados
 
 ```mermaid
@@ -103,10 +101,6 @@ erDiagram
 | descricao | texto (até 2000) | opcional |
 | ingredientes | lista de textos (até 20 itens, 120 caracteres cada); guardada no banco como texto separado por vírgula | opcional |
 | imagem_url | URL http/https (até 500) | opcional |
-
-> A tabela `cafe` mudou de estrutura (não tem mais `preco`, `regiao`, `peso`, `perfil_sabor`, `opcao_moagem` nem `nivel_torra`), porque a nova fonte externa não fornece esses dados. Veja a [seção 11](#11-decisões-de-projeto-e-limitações).
-
-**Comentario:** `admin_id` (autor, preenchido a partir do token — nunca vem do corpo da requisição), `cafe_id` (café do banco local), `texto` (1–1000) e `nota` (1–5). **Admin:** `nome`, `email` (único), `senha_hash`, `ativo`, `criado_em`, `ultimo_login`.
 
 Ao excluir um admin ou um café, os comentários relacionados são removidos em cascata.
 
@@ -197,13 +191,6 @@ Copie `.env.example` para `.env` e ajuste.
 | `JWT_SECRET_KEY` | Segredo dos tokens JWT | aleatório por processo em desenvolvimento |
 | `ADMIN_EMAIL` / `ADMIN_SENHA` | Admin criado automaticamente (seed). Senha com 8+ caracteres, letras e números | nenhum admin é criado se ausentes |
 | `ADMIN_NOME` | Nome do admin do seed | `Administrador` |
-| `DATABASE_URL` | URL do banco | `sqlite` em `instance/cafes.db` |
-| `SAMPLECOFFEE_URL`, `SAMPLECOFFEE_TIMEOUT`, `SAMPLECOFFEE_RETRIES` | Integração externa (base; `/hot` e `/iced` são anexados automaticamente) | `https://api.sampleapis.com/coffee`, 5 s, 1 |
-| `JWT_EXPIRA_MINUTOS` | Validade do token | 30 |
-| `RATELIMIT_DEFAULT`, `RATELIMIT_LOGIN` | Limites de requisições | `100 per minute`, `5 per minute` |
-| `CORS_ORIGINS` | Origens permitidas, separadas por vírgula | vazio (desligado) |
-
-> **Se você já tem um `instance/cafes.db` de uma versão anterior**, apague-o antes de subir a API: as tabelas `cafe` e `comentario` mudaram de colunas (e a tabela `usuario` foi removida) e o projeto não usa migrações (cria as tabelas do zero com `db.create_all()`). Pare o processo da API antes de apagar o arquivo — no Windows, o SQLite fica bloqueado enquanto o processo está rodando.
 
 ### Localmente
 
