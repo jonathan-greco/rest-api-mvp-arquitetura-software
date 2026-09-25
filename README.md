@@ -184,14 +184,15 @@ Se a fonte externa mudar um nome de campo, basta alterar o dicionário. A Sample
 
 ### Variáveis de ambiente
 
-Copie `.env.example` para `.env` e ajuste.
+Criar e editar o arquivo `.env` com as seguintes variáveis:
 
 | Variável | Descrição | Padrão |
 | --- | --- | --- |
 | `APP_ENV` | `development` ou `production` (exige os três segredos abaixo) | `development` |
 | `JWT_SECRET_KEY` | Segredo dos tokens JWT | aleatório por processo em desenvolvimento |
 | `ADMIN_EMAIL` / `ADMIN_SENHA` | Admin criado automaticamente (seed). Senha com 8+ caracteres, letras e números | nenhum admin é criado se ausentes |
-| `ADMIN_NOME` | Nome do admin do seed | `Administrador` |
+| `ADMIN_NOME` | Nome do admin | `Administrador` |
+| `ADMIN_SENHA` | Sua senha local do admin | `Senha local` |
 
 ### Com Docker
 
@@ -199,9 +200,9 @@ Copie `.env.example` para `.env` e ajuste.
 docker build -t cafe-api .
 
 docker run -d --name cafe-api -p 5000:5000 \
-  -e JWT_SECRET_KEY="troque-por-um-segredo-longo" \
-  -e ADMIN_EMAIL="admin@exemplo.com" \
-  -e ADMIN_SENHA="SenhaForte123" \
+  -e JWT_SECRET_KEY="Colocar um token" \
+  -e ADMIN_EMAIL="admin@exemplo.com.br" \
+  -e ADMIN_SENHA="SuaSenha4567" \
   -v cafe-data:/app/instance \
   cafe-api
 ```
