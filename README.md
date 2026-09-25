@@ -30,6 +30,7 @@ A API gerencia três entidades: **Cafe**, **Comentario** e **Admin**.
 | Python 3.12 | Linguagem |
 | Flask | Framework web (application factory + blueprints) |
 | Flask-SQLAlchemy / SQLAlchemy | ORM e acesso ao SQLite |
+| Mapper | Equivalência de campos |
 | Marshmallow | Validação e serialização de dados |
 | Flasgger | Swagger UI e especificação OpenAPI |
 | requests (+ urllib3 Retry) | Cliente HTTP da SampleAPIs Coffee |
