@@ -180,7 +180,7 @@ Criar e editar o arquivo `.env` com as seguintes variáveis:
 | --- | --- | --- |
 | `APP_ENV` | `development` ou `production` (exige os três segredos abaixo) | `development` |
 | `JWT_SECRET_KEY` | Segredo dos tokens JWT | aleatório por processo em desenvolvimento |
-| `ADMIN_EMAIL` / `ADMIN_SENHA` | Admin criado automaticamente (seed). Senha com 8+ caracteres, letras e números | nenhum admin é criado se ausentes |
+| `ADMIN_EMAIL` / `ADMIN_SENHA` | Admin criado automaticamente. Senha com 8+ caracteres, letras e números | nenhum admin é criado se ausentes |
 | `ADMIN_NOME` | Nome do admin | `Administrador` |
 | `ADMIN_SENHA` | Sua senha local do admin | `Senha local` |
 
