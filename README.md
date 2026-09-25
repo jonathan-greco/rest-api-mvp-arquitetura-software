@@ -149,7 +149,7 @@ Cada item vem no formato:
 }
 ```
 
-Este projeto **não diferencia** quente/gelado: toda consulta busca os dois endpoints e junta o resultado, conforme definido no escopo.
+Este projeto **não diferencia** quente e gelado, toda consulta busca os dois endpoints e junta o resultado, conforme definido no escopo.
 
 ### Regra do `GET /api/v1/cafes`
 
@@ -161,7 +161,7 @@ Este projeto **não diferencia** quente/gelado: toda consulta busca os dois endp
 
 ### Detalhe por id
 
-`GET /api/v1/cafes/{id}` usa `origem=auto` por padrão: procura no banco local e, se não achar, consulta a SampleAPIs Coffee. Como os ids locais e externos são independentes, use `?origem=externa` com o `id_externo` para buscar diretamente um item da fonte, ou `?origem=local` para restringir ao banco.
+`GET /api/v1/cafes/{id}` usa `origem=auto` por padrão no banco local e, se não achar consulta a SampleAPIs Coffee. Como os ids locais e externos são independentes, use `?origem=externa` com o `id_externo` para buscar diretamente um item da fonte, ou `?origem=local` para restringir ao banco.
 
 > **Limitação conhecida:** como a fonte não expõe um endpoint por id nem diferencia hot/iced neste projeto, o mesmo id pode existir nos dois grupos (por exemplo, `id=2` em "hot" e `id=2` em "iced" são cafés diferentes). Nesse caso, `origem=externa` devolve o **primeiro encontrado** (a lista "hot" é buscada antes da "iced").
 
@@ -193,18 +193,6 @@ Copie `.env.example` para `.env` e ajuste.
 | `ADMIN_EMAIL` / `ADMIN_SENHA` | Admin criado automaticamente (seed). Senha com 8+ caracteres, letras e números | nenhum admin é criado se ausentes |
 | `ADMIN_NOME` | Nome do admin do seed | `Administrador` |
 
-### Localmente
-
-```bash
-python -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-cp .env.example .env               # Windows: copy .env.example .env
-python run.py
-```
-
-A API sobe em <http://127.0.0.1:5000> e o Swagger em <http://127.0.0.1:5000/apidocs/>. As tabelas e o admin inicial são criados automaticamente.
-
 ### Com Docker
 
 ```bash
@@ -221,6 +209,19 @@ docker run -d --name cafe-api -p 5000:5000 \
 Ou, com um arquivo `.env`: `docker run -d -p 5000:5000 --env-file .env -v cafe-data:/app/instance cafe-api`.
 
 O volume `cafe-data` guarda o arquivo SQLite, então os dados sobrevivem à remoção do container. Em `APP_ENV=production` (padrão da imagem) a aplicação não inicia sem `JWT_SECRET_KEY`, `ADMIN_EMAIL` e `ADMIN_SENHA`. Logs: `docker logs cafe-api`.
+
+### Sem Docker (Localmente)
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+# ou Windows: .venv\Scripts\activate
+
+pip install -r requirements.txt
+python run.py
+```
+
+A API sobe em <http://127.0.0.1:5000> e o Swagger em <http://127.0.0.1:5000/apidocs/>. As tabelas e o admin inicial são criados automaticamente.
 
 ## 8. Estrutura de pastas
 
