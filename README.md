@@ -1,6 +1,6 @@
 # Rest API - Café Explorer (MVP)
 
-API REST em **Python + Flask** com persistência em **SQLite (SQLAlchemy)**, documentação **Swagger (Flasgger)** e integração com um serviço externo, a **SampleAPIs Coffee** (<https://api.sampleapis.com/api-list/coffee>) utilizando a biblioteca Mapper em python para fazer a equivalência e leitura dos dados obtidos. O projeto foi organizado em camadas seguindo os princípios **SOLID** e possui validação de entrada e proteção contra SQL injection.
+API REST em **Python + Flask** com persistência em **SQLite (SQLAlchemy)**, documentação **Swagger (Flasgger)** e integração com um serviço externo, a **SampleAPIs Coffee** (<https://api.sampleapis.com/api-list/coffee>) utilizando a biblioteca **Mapper** em python para fazer a equivalência e leitura dos dados obtidos. O projeto foi organizado em camadas seguindo os princípios **SOLID** e possui validação de entrada e proteção contra SQL injection.
 
 ## Sumário
 
