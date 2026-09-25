@@ -93,17 +93,7 @@ erDiagram
         datetime criado_em
     }
 ```
-
-**Cafe** (campos em português; `id` autoincremento) — alinhado ao formato da SampleAPIs Coffee:
-
-| Campo | Tipo | Regra |
-| --- | --- | --- |
-| nome | texto (2–120) | obrigatório |
-| descricao | texto (até 2000) | opcional |
-| ingredientes | lista de textos (até 20 itens, 120 caracteres cada); guardada no banco como texto separado por vírgula | opcional |
-| imagem_url | URL http/https (até 500) | opcional |
-
-Ao excluir um admin ou um café, os comentários relacionados são removidos em cascata.
+> Ao excluir um admin ou um café, os comentários relacionados são removidos em cascata.
 
 ## 5. Endpoints
 
