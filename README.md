@@ -23,6 +23,7 @@ A API gerencia três entidades: **Cafe**, **Comentario** e **Admin**.
 - O **Admin** (autenticado por token JWT) cria, consulta, altera e remove cafés (`POST`, `GET`, `PUT`, `DELETE`) e escreve **comentários** (com nota de 1 a 5) sobre os cafés do banco local — o autor do comentário é sempre o Admin autenticado no token, nunca informado no corpo da requisição.
 - Os itens da SampleAPIs Coffee são **apenas exibidos** nas consultas: nunca são gravados no SQLite.
 
+
 ## 2. Tecnologias
 
 | Item | Uso |
@@ -39,6 +40,8 @@ A API gerencia três entidades: **Cafe**, **Comentario** e **Admin**.
 | Flask-CORS | CORS configurável |
 | bleach | Sanitização de HTML em textos |
 | Gunicorn | Servidor de produção (Docker) |
+
+![Diagrama da visão geral de tecnologia](./visao-geral-cafe-explorer.png)
 
 ## 3. Arquitetura e SOLID
 
