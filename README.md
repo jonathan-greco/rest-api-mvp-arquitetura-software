@@ -185,7 +185,7 @@ Descrição e siginifcado das variáveis de ambiente:
 | `ADMIN_EMAIL` | Seu e-mail | Use um e-mail válido |
 | `ADMIN_NOME` | Nome do admin | Administrador |
 | `ADMIN_SENHA` | Senha local do admin | Senha com 8+ caracteres, letras e números |
-| `CORS_ORIGINS` | Habilita a permissão de acesso local | [Administrador](http://localhost:8080) é a url da aplicação front-end |
+| `CORS_ORIGINS` | Habilita a permissão de acesso local | `http://localhost:8080` é a url da aplicação front-end |
 
 ### Com Docker
 
@@ -200,7 +200,7 @@ node -e "import('crypto').then(c => console.log(c.randomBytes(32).toString('hex'
 Criar e executar o container
 ```bash
 docker run -d --name cafe-api -p 5000:5000 \
-  -e JWT_SECRET_KEY="troque-por-um-segredo-longo" \
+  -e JWT_SECRET_KEY="coloque-o-token-gerado" \
   -e ADMIN_EMAIL="admin@exemplo.com.br" \
   -e ADMIN_SENHA="SuaSenha2468" \
   -e CORS_ORIGINS="http://localhost:8080" \
