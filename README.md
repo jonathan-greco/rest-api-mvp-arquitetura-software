@@ -177,6 +177,12 @@ Se a fonte externa mudar um nome de campo, basta alterar o dicionário. A Sample
 
 ## 7. Como executar
 
+### Clonar e baixar este repositório
+
+```bash
+git clone https://github.com/jonathan-greco/rest-api-mvp-arquitetura-software.git
+```
+
 ### Variáveis de ambiente
 
 Descrição e siginifcado das variáveis de ambiente:
