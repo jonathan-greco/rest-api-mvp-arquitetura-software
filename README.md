@@ -188,7 +188,14 @@ Criar e editar o arquivo `.env` com as seguintes variáveis:
 
 ```bash
 docker build -t cafe-api .
+```
 
+Gerar um token para o JWT_SECRET_KEY
+```bash
+node -e "import('crypto').then(c => console.log(c.randomBytes(32).toString('hex')))"
+```
+Criar e executar o container
+```bash
 docker run -d --name cafe-api -p 5000:5000 \
   -e JWT_SECRET_KEY="Colocar um token" \
   -e ADMIN_EMAIL="admin@exemplo.com.br" \
@@ -196,8 +203,6 @@ docker run -d --name cafe-api -p 5000:5000 \
   -v cafe-data:/app/instance \
   cafe-api
 ```
-
-Ou, com um arquivo `.env`: `docker run -d -p 5000:5000 --env-file .env -v cafe-data:/app/instance cafe-api`.
 
 O volume `cafe-data` guarda o arquivo SQLite, então os dados sobrevivem à remoção do container. Em `APP_ENV=production` (padrão da imagem) a aplicação não inicia sem `JWT_SECRET_KEY`, `ADMIN_EMAIL` e `ADMIN_SENHA`. Logs: `docker logs cafe-api`.
 
