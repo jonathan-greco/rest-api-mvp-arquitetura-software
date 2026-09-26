@@ -185,6 +185,7 @@ Descrição e siginifcado das variáveis de ambiente:
 | `ADMIN_EMAIL` | Seu e-mail | Use um e-mail válido |
 | `ADMIN_NOME` | Nome do admin | Administrador |
 | `ADMIN_SENHA` | Senha local do admin | Senha com 8+ caracteres, letras e números |
+| `CORS_ORIGINS` | Habilita a permissão de acesso local | [Administrador](http://localhost:8080) é a url da aplicação front-end |
 
 ### Com Docker
 
