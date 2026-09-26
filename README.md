@@ -199,9 +199,10 @@ node -e "import('crypto').then(c => console.log(c.randomBytes(32).toString('hex'
 Criar e executar o container
 ```bash
 docker run -d --name cafe-api -p 5000:5000 \
-  -e JWT_SECRET_KEY="Colocar um token" \
+  -e JWT_SECRET_KEY="troque-por-um-segredo-longo" \
   -e ADMIN_EMAIL="admin@exemplo.com.br" \
-  -e ADMIN_SENHA="SuaSenha4567" \
+  -e ADMIN_SENHA="SuaSenha2468" \
+  -e CORS_ORIGINS="http://localhost:8080" \
   -v cafe-data:/app/instance \
   cafe-api
 ```
