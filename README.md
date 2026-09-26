@@ -207,6 +207,8 @@ O volume `cafe-data` guarda o arquivo SQLite, então os dados sobrevivem à remo
 
 ### Sem Docker (Localmente)
 
+Necessário criar um arquivo `.env` e incluir as variáveis de ambiente descritas acima.
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate
