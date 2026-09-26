@@ -195,7 +195,7 @@ Descrição e siginifcado das variáveis de ambiente:
 | `ADMIN_SENHA` | Senha local do admin | Senha com 8+ caracteres, letras e números |
 | `CORS_ORIGINS` | Habilita a permissão de acesso local | `http://localhost:8080` é a url da aplicação front-end |
 
-### Com Docker
+### Executar com Docker
 
 ```bash
 docker build -t cafe-api .
@@ -218,7 +218,7 @@ docker run -d --name cafe-api -p 5000:5000 \
 
 O volume `cafe-data` guarda o arquivo SQLite, então os dados sobrevivem à remoção do container. Em `APP_ENV=production` (padrão da imagem) a aplicação não inicia sem `JWT_SECRET_KEY`, `ADMIN_EMAIL` e `ADMIN_SENHA`. Logs: `docker logs cafe-api`.
 
-### Sem Docker (Localmente)
+### Executar sem Docker (Localmente)
 
 Necessário criar um arquivo `.env` e incluir as variáveis de ambiente descritas acima.
 
