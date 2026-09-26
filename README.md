@@ -174,15 +174,14 @@ Se a fonte externa mudar um nome de campo, basta alterar o dicionário. A Sample
 
 ### Variáveis de ambiente
 
-Criar e editar o arquivo `.env` com as seguintes variáveis:
+Descrição e siginifcado das variáveis de ambiente:
 
 | Variável | Descrição | Padrão |
 | --- | --- | --- |
-| `APP_ENV` | `development` ou `production` (exige os três segredos abaixo) | `development` |
-| `JWT_SECRET_KEY` | Segredo dos tokens JWT | aleatório por processo em desenvolvimento |
-| `ADMIN_EMAIL` / `ADMIN_SENHA` | Admin criado automaticamente. Senha com 8+ caracteres, letras e números | nenhum admin é criado se ausentes |
-| `ADMIN_NOME` | Nome do admin | `Administrador` |
-| `ADMIN_SENHA` | Sua senha local do admin | `Senha local` |
+| `JWT_SECRET_KEY` | Segredo dos tokens JWT | Gerar um token aleatório |
+| `ADMIN_EMAIL` | Seu e-mail | Use um e-mail válido |
+| `ADMIN_NOME` | Nome do admin | Administrador |
+| `ADMIN_SENHA` | Senha local do admin | Senha com 8+ caracteres, letras e números |
 
 ### Com Docker
 
