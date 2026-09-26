@@ -1,6 +1,6 @@
-# API de Cafés — MVP de Arquitetura de Software Backend
+# Rest API - Café Explorer (MVP)
 
-API REST em **Python + Flask** com persistência em **SQLite (SQLAlchemy)**, documentação **Swagger (Flasgger)** e integração com um serviço externo, a **SampleAPIs Coffee** (<https://api.sampleapis.com/api-list/coffee>). O projeto foi organizado em camadas seguindo os princípios **SOLID** e possui validação de entrada e proteção contra SQL injection.
+API REST em **Python + Flask** com persistência em **SQLite (SQLAlchemy)**, documentação **Swagger (Flasgger)** e integração com um serviço externo, a **SampleAPIs Coffee** (<https://api.sampleapis.com/api-list/coffee>) utilizando a biblioteca **Mapper** em python para fazer a equivalência e leitura dos dados obtidos. O projeto foi organizado em camadas seguindo os princípios **SOLID** e possui validação de entrada e proteção contra SQL injection.
 
 ## Sumário
 
@@ -10,11 +10,8 @@ API REST em **Python + Flask** com persistência em **SQLite (SQLAlchemy)**, doc
 4. [Modelo de dados](#4-modelo-de-dados)
 5. [Endpoints](#5-endpoints)
 6. [Integração com a SampleAPIs Coffee](#6-integração-com-a-sampleapis-coffee)
-7. [Segurança](#7-segurança)
-8. [Como executar](#8-como-executar)
-9. [Roteiro de teste manual (curl)](#9-roteiro-de-teste-manual-curl)
-10. [Estrutura de pastas](#10-estrutura-de-pastas)
-11. [Decisões de projeto e limitações](#11-decisões-de-projeto-e-limitações)
+7. [Como executar](#7-como-executar)
+8. [Estrutura de pastas](#8-estrutura-de-pastas)
 
 ---
 
@@ -33,6 +30,7 @@ A API gerencia três entidades: **Cafe**, **Comentario** e **Admin**.
 | Python 3.12 | Linguagem |
 | Flask | Framework web (application factory + blueprints) |
 | Flask-SQLAlchemy / SQLAlchemy | ORM e acesso ao SQLite |
+| Mapper | Equivalência de campos |
 | Marshmallow | Validação e serialização de dados |
 | Flasgger | Swagger UI e especificação OpenAPI |
 | requests (+ urllib3 Retry) | Cliente HTTP da SampleAPIs Coffee |
@@ -63,8 +61,6 @@ Cada camada só conhece a de baixo, por meio de abstrações:
 | **L** — Substituição de Liskov | Qualquer implementação de `RepositorioBase` pode substituir a do SQLAlchemy sem quebrar os services. |
 | **I** — Segregação de interfaces | Interfaces pequenas: `RepositorioBase` (CRUD) e `FonteCafeExterna` (apenas leitura: `list` e `get`). |
 | **D** — Inversão de dependência | Os services recebem repositórios e fonte externa no construtor. A montagem acontece em um único lugar, `app/container.py`. |
-
-Outras decisões: *application factory* (`create_app`), configuração por variáveis de ambiente, exceções de domínio (`NaoEncontradoError`, `ConflitoError`, ...) convertidas em JSON padronizado por um handler global.
 
 ## 4. Modelo de dados
 
@@ -97,21 +93,7 @@ erDiagram
         datetime criado_em
     }
 ```
-
-**Cafe** (campos em português; `id` autoincremento) — alinhado ao formato da SampleAPIs Coffee:
-
-| Campo | Tipo | Regra |
-| --- | --- | --- |
-| nome | texto (2–120) | obrigatório |
-| descricao | texto (até 2000) | opcional |
-| ingredientes | lista de textos (até 20 itens, 120 caracteres cada); guardada no banco como texto separado por vírgula | opcional |
-| imagem_url | URL http/https (até 500) | opcional |
-
-> A tabela `cafe` mudou de estrutura (não tem mais `preco`, `regiao`, `peso`, `perfil_sabor`, `opcao_moagem` nem `nivel_torra`), porque a nova fonte externa não fornece esses dados. Veja a [seção 11](#11-decisões-de-projeto-e-limitações).
-
-**Comentario:** `admin_id` (autor, preenchido a partir do token — nunca vem do corpo da requisição), `cafe_id` (café do banco local), `texto` (1–1000) e `nota` (1–5). **Admin:** `nome`, `email` (único), `senha_hash`, `ativo`, `criado_em`, `ultimo_login`.
-
-Ao excluir um admin ou um café, os comentários relacionados são removidos em cascata.
+> Ao excluir um admin ou um café, os comentários relacionados são removidos em cascata.
 
 ## 5. Endpoints
 
@@ -157,7 +139,7 @@ Cada item vem no formato:
 }
 ```
 
-Este projeto **não diferencia** quente/gelado: toda consulta busca os dois endpoints e junta o resultado, conforme definido no escopo.
+Este projeto **não diferencia** quente e gelado, toda consulta busca os dois endpoints e junta o resultado, conforme definido no escopo.
 
 ### Regra do `GET /api/v1/cafes`
 
@@ -169,7 +151,7 @@ Este projeto **não diferencia** quente/gelado: toda consulta busca os dois endp
 
 ### Detalhe por id
 
-`GET /api/v1/cafes/{id}` usa `origem=auto` por padrão: procura no banco local e, se não achar, consulta a SampleAPIs Coffee. Como os ids locais e externos são independentes, use `?origem=externa` com o `id_externo` para buscar diretamente um item da fonte, ou `?origem=local` para restringir ao banco.
+`GET /api/v1/cafes/{id}` usa `origem=auto` por padrão no banco local e, se não achar consulta a SampleAPIs Coffee. Como os ids locais e externos são independentes, use `?origem=externa` com o `id_externo` para buscar diretamente um item da fonte, ou `?origem=local` para restringir ao banco.
 
 > **Limitação conhecida:** como a fonte não expõe um endpoint por id nem diferencia hot/iced neste projeto, o mesmo id pode existir nos dois grupos (por exemplo, `id=2` em "hot" e `id=2` em "iced" são cafés diferentes). Nesse caso, `origem=externa` devolve o **primeiro encontrado** (a lista "hot" é buscada antes da "iced").
 
@@ -188,112 +170,57 @@ O `CafeMapper` (`app/clients/cafe_mapper.py`) concentra a correspondência entre
 
 Se a fonte externa mudar um nome de campo, basta alterar o dicionário. A SampleAPIs Coffee só é acessada por leitura (`GET`); a escrita acontece apenas no nosso banco.
 
-## 7. Segurança
-
-| Ameaça | Proteção |
-| --- | --- |
-| **SQL injection** | Somente ORM/expressões do SQLAlchemy, com parâmetros vinculados; nenhuma SQL é montada por concatenação. Colunas de ordenação e filtro vêm de listas permitidas (whitelist) e curingas `%`/`_` viram texto literal. |
-| Dados malformados | Schemas Marshmallow validam tipo (estrito), tamanho e formato; campos desconhecidos são recusados (evita *mass assignment*); ingredientes limitados em quantidade e tamanho. |
-| XSS armazenado | Textos livres (nome, descrição, ingredientes) passam por `bleach` (tags HTML removidas) e caracteres de controle são descartados. Como `<`, `>` e `&` ficam escapados, clientes web devem exibir os textos como texto, não como HTML. |
-| Payload abusivo | `MAX_CONTENT_LENGTH` (1 MB), corpo obrigatoriamente objeto JSON, URL de imagem restrita a http/https. |
-| Força bruta | Rate limit padrão (100/min por IP) e mais rígido no login (5/min). |
-| Enumeração de contas | Login responde sempre "Credenciais inválidas" e compara um hash mesmo quando o e-mail não existe (tempo constante). |
-| Senhas e tokens | Senha só como hash (`werkzeug.security`); JWT com expiração (30 min) e segredo vindo do ambiente; admin desativado perde acesso mesmo com token válido. |
-| Vazamento de informação | Handler global sem stack trace; detalhes só nos logs. |
-| SSRF | URL da SampleAPIs Coffee fixa em configuração; o id repassado à API externa é convertido para inteiro. |
-| Cabeçalhos e CORS | `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`; CORS desligado por padrão e configurável por origem. |
-| Container | Imagem slim, usuário sem privilégios e Gunicorn. |
-
-## 8. Como executar
+## 7. Como executar
 
 ### Variáveis de ambiente
 
-Copie `.env.example` para `.env` e ajuste.
+Descrição e siginifcado das variáveis de ambiente:
 
 | Variável | Descrição | Padrão |
 | --- | --- | --- |
-| `APP_ENV` | `development` ou `production` (exige os três segredos abaixo) | `development` |
-| `JWT_SECRET_KEY` | Segredo dos tokens JWT | aleatório por processo em desenvolvimento |
-| `ADMIN_EMAIL` / `ADMIN_SENHA` | Admin criado automaticamente (seed). Senha com 8+ caracteres, letras e números | nenhum admin é criado se ausentes |
-| `ADMIN_NOME` | Nome do admin do seed | `Administrador` |
-| `DATABASE_URL` | URL do banco | `sqlite` em `instance/cafes.db` |
-| `SAMPLECOFFEE_URL`, `SAMPLECOFFEE_TIMEOUT`, `SAMPLECOFFEE_RETRIES` | Integração externa (base; `/hot` e `/iced` são anexados automaticamente) | `https://api.sampleapis.com/coffee`, 5 s, 1 |
-| `JWT_EXPIRA_MINUTOS` | Validade do token | 30 |
-| `RATELIMIT_DEFAULT`, `RATELIMIT_LOGIN` | Limites de requisições | `100 per minute`, `5 per minute` |
-| `CORS_ORIGINS` | Origens permitidas, separadas por vírgula | vazio (desligado) |
-
-> **Se você já tem um `instance/cafes.db` de uma versão anterior**, apague-o antes de subir a API: as tabelas `cafe` e `comentario` mudaram de colunas (e a tabela `usuario` foi removida) e o projeto não usa migrações (cria as tabelas do zero com `db.create_all()`). Pare o processo da API antes de apagar o arquivo — no Windows, o SQLite fica bloqueado enquanto o processo está rodando.
-
-### Localmente
-
-```bash
-python -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-cp .env.example .env               # Windows: copy .env.example .env
-python run.py
-```
-
-A API sobe em <http://127.0.0.1:5000> e o Swagger em <http://127.0.0.1:5000/apidocs/>. As tabelas e o admin inicial são criados automaticamente.
+| `JWT_SECRET_KEY` | Segredo dos tokens JWT | Gerar um token aleatório |
+| `ADMIN_EMAIL` | Seu e-mail | Use um e-mail válido |
+| `ADMIN_NOME` | Nome do admin | Administrador |
+| `ADMIN_SENHA` | Senha local do admin | Senha com 8+ caracteres, letras e números |
 
 ### Com Docker
 
 ```bash
 docker build -t cafe-api .
+```
 
+Gerar um token para o JWT_SECRET_KEY
+```bash
+node -e "import('crypto').then(c => console.log(c.randomBytes(32).toString('hex')))"
+```
+Criar e executar o container
+```bash
 docker run -d --name cafe-api -p 5000:5000 \
-  -e JWT_SECRET_KEY="troque-por-um-segredo-longo" \
-  -e ADMIN_EMAIL="admin@exemplo.com" \
-  -e ADMIN_SENHA="SenhaForte123" \
+  -e JWT_SECRET_KEY="Colocar um token" \
+  -e ADMIN_EMAIL="admin@exemplo.com.br" \
+  -e ADMIN_SENHA="SuaSenha4567" \
   -v cafe-data:/app/instance \
   cafe-api
 ```
 
-Ou, com um arquivo `.env`: `docker run -d -p 5000:5000 --env-file .env -v cafe-data:/app/instance cafe-api`.
-
 O volume `cafe-data` guarda o arquivo SQLite, então os dados sobrevivem à remoção do container. Em `APP_ENV=production` (padrão da imagem) a aplicação não inicia sem `JWT_SECRET_KEY`, `ADMIN_EMAIL` e `ADMIN_SENHA`. Logs: `docker logs cafe-api`.
 
-## 9. Roteiro de teste manual (curl)
+### Sem Docker (Localmente)
 
-Assumindo a API em `http://localhost:5000` e o admin `admin@exemplo.com` / `SenhaForte123`.
+Necessário criar um arquivo `.env` e incluir as variáveis de ambiente descritas acima.
 
 ```bash
-# 1) Login do admin e captura do token
-TOKEN=$(curl -s -X POST localhost:5000/api/v1/admin/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@exemplo.com","senha":"SenhaForte123"}' | python -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+python -m venv .venv
+source .venv/bin/activate
+# ou Windows: .venv\Scripts\activate
 
-# 2) Admin cria um café (POST na própria coleção /api/v1/cafes)
-curl -s -X POST localhost:5000/api/v1/cafes \
-  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"nome":"Latte","descricao":"Espresso com leite vaporizado.","ingredientes":["Espresso","Leite vaporizado"],"imagem_url":"https://exemplo.com/latte.jpg"}'
-
-# 3) Admin atualiza e remove (PUT, DELETE)
-curl -s -X PUT localhost:5000/api/v1/cafes/1 -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"nome":"Latte Clássico","ingredientes":["Espresso","Leite vaporizado","Espuma de leite"]}'
-curl -s -X DELETE localhost:5000/api/v1/cafes/1 -H "Authorization: Bearer $TOKEN" -i
-
-# 4) Consulta pública: banco local + SampleAPIs Coffee
-curl -s "localhost:5000/api/v1/cafes?ordenar_por=nome&direcao=desc"
-curl -s "localhost:5000/api/v1/cafes?incluir_externos=false"      # só banco local
-curl -s "localhost:5000/api/v1/cafes/2?origem=externa"            # item de id 2 na fonte externa
-
-# 5) Comentário do Admin sobre um café (autor vem do token, não do corpo)
-curl -s -X POST localhost:5000/api/v1/comentarios -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"cafe_id":1,"texto":"Excelente aroma!","nota":5}'
-curl -s "localhost:5000/api/v1/comentarios?cafe_id=1"
-
-# 6) Verificações de segurança (todas devem ser recusadas ou tratadas como texto)
-curl -s -i -X POST localhost:5000/api/v1/cafes -H "Content-Type: application/json" \
-  -d '{"nome":"sem token"}'                                                    # 401 sem token
-curl -s -i localhost:5000/api/v1/comentarios -X POST -H "Content-Type: application/json" \
-  -d '{"cafe_id":1,"texto":"sem token","nota":3}'                              # 401 sem token
-curl -s "localhost:5000/api/v1/cafes?ordenar_por=id;DROP%20TABLE%20cafe" -H "Authorization: Bearer $TOKEN"   # 422
-curl -s -X POST localhost:5000/api/v1/cafes -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"nome":"x'); DROP TABLE cafe;--"}'                                      # gravado como texto, tabela intacta
+pip install -r requirements.txt
+python run.py
 ```
 
-## 10. Estrutura de pastas
+A API sobe em <http://127.0.0.1:5000> e o Swagger em <http://127.0.0.1:5000/apidocs/>. As tabelas e o admin inicial são criados automaticamente.
+
+## 8. Estrutura de pastas
 
 ```text
 rest-api-mvp-arquitetura-software/
@@ -320,17 +247,8 @@ rest-api-mvp-arquitetura-software/
 └── README.md
 ```
 
-## 11. Decisões de projeto e limitações
+## Autor
 
-- **Modelo Cafe alinhado à SampleAPIs Coffee**: a fonte externa só fornece `title`, `description`, `ingredients` e `image`, sem preço, região, peso, moagem ou torra. Por isso o modelo Cafe (e a tabela `cafe`) foi reduzido a `nome`, `descricao`, `ingredientes` e `imagem_url` — os campos antigos (`preco`, `regiao`, `peso`, `perfil_sabor`, `opcao_moagem`, `nivel_torra`) foram removidos.
-- **Quente/gelado não é diferenciado**: a fonte expõe `/coffee/hot` e `/coffee/iced` separadamente; este projeto sempre consulta os dois e junta o resultado, sem marcar qual é qual.
-- **Sem endpoint por id na fonte externa**: `origem=externa` busca nas duas listas e pode haver colisão de id entre hot e iced (ver seção 6).
-- **Itens da SampleAPIs Coffee são só exibidos**, sem importação para o SQLite; comentários só referenciam cafés do banco local.
-- **Entidade Usuário removida**: o projeto não distingue mais usuários comuns. Os comentários passaram a ser escritos pelo próprio **Admin** — `POST /api/v1/comentarios` exige login (token JWT) e o `admin_id` do comentário vem sempre do admin autenticado, nunca do corpo da requisição.
-- **Escrita de cafés e criação de comentário são exclusivas do Admin**; leitura de comentários é pública, e `PUT`/`DELETE` de comentário permanecem abertos (o MVP não distingue "dono" do comentário além do autor original, então qualquer cliente pode atualizar ou remover um comentário existente).
-- **Um único Admin, criado por seed**; não há CRUD de admins nem recuperação de senha.
-- **CRUD de Café pertence à coleção `/api/v1/cafes`**, não à área do Admin: `POST`/`PUT`/`DELETE` exigem login, mas vivem no mesmo recurso do `GET`, que é todo público. Não existe mais uma listagem/detalhe "de gestão" separada — quem precisa só do banco local usa `GET /api/v1/cafes?incluir_externos=false` ou `GET /api/v1/cafes/{id}?origem=local`, sem exigir login.
-- **Rate limit em memória**: vale por processo. Por isso o Docker usa 1 worker Gunicorn com threads; para escalar horizontalmente, use um armazenamento compartilhado (`RATELIMIT_STORAGE_URI`, por exemplo Redis).
-- **SQLite** atende ao MVP; para mais concorrência, troque `DATABASE_URL` por outro banco (o acesso é todo via SQLAlchemy).
-- **Sem migrações** (Alembic): as tabelas são criadas com `db.create_all()`. Trocar a estrutura do Cafe (como fizemos aqui) exige apagar o banco existente.
-- **Sem testes automatizados**, conforme definido no escopo; o roteiro da seção 9 cobre a verificação manual.
+- Jonathan Greco Leite [@jonathan-greco](https://www.github.com/jonathan-greco)
+
+Repositório do projeto MVP Arquitetura de Software de Pós-graduação de Engenharia de Software, em 2026, da PUC-Rio.
