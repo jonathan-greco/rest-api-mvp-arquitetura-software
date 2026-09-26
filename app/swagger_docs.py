@@ -24,14 +24,16 @@ _ERRO = {"$ref": "#/definitions/Erro"}
 SWAGGER_TEMPLATE = {
     "swagger": "2.0",
     "info": {
-        "title": "API de Cafés",
+        "title": "API Café Explorer",
+        "author": "Jonathan Greco Leite",
         "description": (
             "MVP de API REST (Flask + SQLAlchemy + SQLite) com CRUD de Café e Comentário, "
             "gerenciados na própria coleção de cada um (escrita exige login de Admin). O GET "
             "público de cafés combina o banco local com a API externa SampleAPIs Coffee "
             "(https://api.sampleapis.com/coffee).\n\n"
             "**Login:** faça `POST /api/v1/admin/auth/login`, copie o token e clique em "
-            "*Authorize* informando `Bearer <token>`."
+            "*Authorize* informando `Bearer <token>`.\n\n"
+            "**Desenvolvedor:** `Jonathan Greco Leite`."
         ),
         "version": "1.0.0",
     },

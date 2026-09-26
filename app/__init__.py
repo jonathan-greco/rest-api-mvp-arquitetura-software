@@ -51,7 +51,7 @@ def create_app(sobrescrever_config: dict | None = None, fonte_externa=None) -> F
     limiter.init_app(app)
     swagger.init_app(app)
     if app.config["CORS_ORIGINS"]:
-        CORS(app, resources={r"/api/*": {"origins": app.config["CORS_ORIGINS"]}})
+        CORS(app, resources={r"/api/*": {"origins": ["http://localhost:8080", "http://localhost:5173"]}})
 
     registrar_handlers(app)
     registrar_rotas(app)
