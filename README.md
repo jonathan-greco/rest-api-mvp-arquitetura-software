@@ -248,7 +248,6 @@ rest-api-mvp-arquitetura-software/
 ├── requirements.txt
 ├── Dockerfile
 ├── .dockerignore
-├── .env.example
 └── README.md
 ```
 
